@@ -25,6 +25,7 @@ public class OpenAIServiceFactory {
       apiKey: String,
       organizationID: String? = nil,
       configuration: URLSessionConfiguration = .default,
+      taskDelegate: URLSessionTaskDelegate? = nil,
       decoder: JSONDecoder = .init(),
       debugEnabled: Bool = false)
       -> OpenAIService
@@ -33,6 +34,7 @@ public class OpenAIServiceFactory {
          apiKey: apiKey,
          organizationID: organizationID,
          configuration: configuration,
+         taskDelegate: taskDelegate,
          decoder: decoder,
          debugEnabled: debugEnabled)
    }

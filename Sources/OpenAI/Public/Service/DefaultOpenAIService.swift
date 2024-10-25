@@ -11,7 +11,8 @@ struct DefaultOpenAIService: OpenAIService {
    
    let session: URLSession
    let decoder: JSONDecoder
-   
+   weak var taskDelegate: URLSessionTaskDelegate?
+  
    private let sessionID = UUID().uuidString
    /// [authentication](https://platform.openai.com/docs/api-reference/authentication)
    private let apiKey: Authorization
@@ -28,11 +29,13 @@ struct DefaultOpenAIService: OpenAIService {
       baseURL: String? = nil,
       proxyPath: String? = nil,
       configuration: URLSessionConfiguration = .default,
+      taskDelegate: URLSessionTaskDelegate? = nil,
       decoder: JSONDecoder = .init(),
       debugEnabled: Bool)
    {
       self.session = URLSession(configuration: configuration)
       self.decoder = decoder
+      self.taskDelegate = taskDelegate
       self.apiKey = .bearer(apiKey)
       self.organizationID = organizationID
       OpenAIAPI.overrideBaseURL = baseURL

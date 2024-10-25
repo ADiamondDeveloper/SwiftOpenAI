@@ -9,6 +9,8 @@ import Foundation
 
 struct LocalModelService: OpenAIService {
    
+   var taskDelegate: (any URLSessionTaskDelegate)?
+   
    let session: URLSession
    let decoder: JSONDecoder
    /// [authentication](https://platform.openai.com/docs/api-reference/authentication)

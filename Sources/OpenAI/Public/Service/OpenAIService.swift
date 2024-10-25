@@ -71,7 +71,7 @@ public protocol OpenAIService {
    /// and it's used for tasks like sending and receiving data.
    var session: URLSession { get }
    /// The `JSONDecoder` instance used for decoding JSON responses.
-   ///
+   var taskDelegate: URLSessionTaskDelegate? { get }
    /// This decoder is used to parse the JSON responses returned by the API
    /// into model objects that conform to the `Decodable` protocol.
    var decoder: JSONDecoder { get }
@@ -946,7 +946,7 @@ extension OpenAIService {
       async throws -> [[String: Any]]
    {
       printCurlCommand(request)
-      let (data, response) = try await session.data(for: request)
+     let (data, response) = try await session.data(for: request, delegate: taskDelegate)
       guard let httpResponse = response as? HTTPURLResponse else {
          throw APIError.requestFailed(description: "invalid response unable to get a valid HTTPURLResponse")
       }
@@ -991,7 +991,7 @@ extension OpenAIService {
       async throws -> Data
    {
       printCurlCommand(request)
-      let (data, response) = try await session.data(for: request)
+      let (data, response) = try await session.data(for: request, delegate: taskDelegate)
       
       guard let httpResponse = response as? HTTPURLResponse else {
          throw APIError.requestFailed(description: "Invalid response: unable to get a valid HTTPURLResponse")
@@ -1032,7 +1032,7 @@ extension OpenAIService {
       if debugEnabled {
          printCurlCommand(request)
       }
-      let (data, response) = try await session.data(for: request)
+      let (data, response) = try await session.data(for: request, delegate: taskDelegate)
       guard let httpResponse = response as? HTTPURLResponse else {
          throw APIError.requestFailed(description: "invalid response unable to get a valid HTTPURLResponse")
       }

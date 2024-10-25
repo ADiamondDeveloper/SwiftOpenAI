@@ -8,6 +8,8 @@
 import Foundation
 
 final public class DefaultOpenAIAzureService: OpenAIService {
+  
+  public var taskDelegate: (any URLSessionTaskDelegate)?
 
    public init(
       azureConfiguration: AzureOpenAIConfiguration,

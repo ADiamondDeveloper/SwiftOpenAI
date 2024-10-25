@@ -11,6 +11,8 @@ private let aiproxySecureDelegate = AIProxyCertificatePinningDelegate()
 
 
 struct AIProxyService: OpenAIService {
+  
+  var taskDelegate: (any URLSessionTaskDelegate)?
 
    let session: URLSession
    let decoder: JSONDecoder
