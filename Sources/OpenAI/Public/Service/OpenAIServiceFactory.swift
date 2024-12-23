@@ -132,8 +132,10 @@ public class OpenAIServiceFactory {
    ///
    /// - Parameters:
    ///   - apiKey: The optional API key required for authentication.
-   ///   - baseURL: The local host URL. defaults to  "https://api.groq.com"
+   ///   - baseURL: The local host URL.  e.g "https://api.groq.com" or "https://generativelanguage.googleapis.com"
    ///   - proxyPath: The proxy path e.g `openai`
+   ///   - overrideVersion: The API version. defaults to `V1`
+   ///   - extraHeaders: Additional headers needed for the request. Do not provide API key in these headers.
    ///   - debugEnabled: If `true` service prints event on DEBUG builds, default to `false`.
    ///
    /// - Returns: A fully configured object conforming to `OpenAIService`.
@@ -141,6 +143,8 @@ public class OpenAIServiceFactory {
       apiKey: String,
       overrideBaseURL: String,
       proxyPath: String? = nil,
+      overrideVersion: String? = nil,
+      extraHeaders: [String: String]? = nil,
       debugEnabled: Bool = false)
       -> OpenAIService
    {
@@ -148,6 +152,8 @@ public class OpenAIServiceFactory {
          apiKey: apiKey,
          baseURL: overrideBaseURL,
          proxyPath: proxyPath,
+         overrideVersion: overrideVersion,
+         extraHeaders: extraHeaders,
          debugEnabled: debugEnabled)
    }
 }

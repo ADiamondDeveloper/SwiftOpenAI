@@ -1100,7 +1100,7 @@ extension OpenAIService {
 
       let (data, response) = try await session.bytes(
          for: request,
-         delegate: session.delegate as? URLSessionTaskDelegate
+         delegate: taskDelegate
       )
       guard let httpResponse = response as? HTTPURLResponse else {
          throw APIError.requestFailed(description: "invalid response unable to get a valid HTTPURLResponse")
@@ -1192,7 +1192,7 @@ extension OpenAIService {
       
       let (data, response) = try await session.bytes(
          for: request,
-         delegate: session.delegate as? URLSessionTaskDelegate
+         delegate: taskDelegate
       )
       guard let httpResponse = response as? HTTPURLResponse else {
          throw APIError.requestFailed(description: "invalid response unable to get a valid HTTPURLResponse")
