@@ -55,7 +55,7 @@ public class OpenAIServiceFactory {
       urlSessionConfiguration: URLSessionConfiguration = .default,
       decoder: JSONDecoder = .init(),
       debugEnabled: Bool = false)
-   -> OpenAIService
+      -> OpenAIService
    {
       DefaultOpenAIAzureService(
          azureConfiguration: azureConfiguration,
@@ -89,7 +89,7 @@ public class OpenAIServiceFactory {
       aiproxyServiceURL: String? = nil,
       aiproxyClientID: String? = nil,
       debugEnabled: Bool = false)
-   -> OpenAIService
+      -> OpenAIService
    {
       AIProxyService(
         partialKey: aiproxyPartialKey,
@@ -134,7 +134,7 @@ public class OpenAIServiceFactory {
    ///   - apiKey: The optional API key required for authentication.
    ///   - baseURL: The local host URL.  e.g "https://api.groq.com" or "https://generativelanguage.googleapis.com"
    ///   - proxyPath: The proxy path e.g `openai`
-   ///   - overrideVersion: The API version. defaults to `V1`
+   ///   - overrideVersion: The API version. defaults to `v1`
    ///   - extraHeaders: Additional headers needed for the request. Do not provide API key in these headers.
    ///   - debugEnabled: If `true` service prints event on DEBUG builds, default to `false`.
    ///
@@ -145,6 +145,7 @@ public class OpenAIServiceFactory {
       proxyPath: String? = nil,
       overrideVersion: String? = nil,
       extraHeaders: [String: String]? = nil,
+      taskDelegate: URLSessionTaskDelegate? = nil,
       debugEnabled: Bool = false)
       -> OpenAIService
    {
@@ -154,6 +155,7 @@ public class OpenAIServiceFactory {
          proxyPath: proxyPath,
          overrideVersion: overrideVersion,
          extraHeaders: extraHeaders,
+         taskDelegate: taskDelegate,
          debugEnabled: debugEnabled)
    }
 }
