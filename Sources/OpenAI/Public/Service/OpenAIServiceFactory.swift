@@ -142,6 +142,7 @@ public class OpenAIServiceFactory {
    public static func service(
       apiKey: String,
       overrideBaseURL: String,
+      configuration: URLSessionConfiguration = .default,
       proxyPath: String? = nil,
       overrideVersion: String? = nil,
       extraHeaders: [String: String]? = nil,
@@ -155,6 +156,7 @@ public class OpenAIServiceFactory {
          proxyPath: proxyPath,
          overrideVersion: overrideVersion,
          extraHeaders: extraHeaders,
+         configuration: configuration,
          taskDelegate: taskDelegate,
          debugEnabled: debugEnabled)
    }
