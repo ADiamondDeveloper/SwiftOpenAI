@@ -18,16 +18,20 @@ public struct AudioSpeechParameters: Encodable {
    let voice: String
    /// Defaults to mp3, The format to audio in. Supported formats are mp3, opus, aac, and flac.
    let responseFormat: String?
+   /// Control the voice of your generated audio with additional instructions. Does not work with tts-1 or tts-1-hd
+   let instructions: String?
    /// Defaults to 1,  The speed of the generated audio. Select a value from 0.25 to 4.0. 1.0 is the default.
    let speed: Double?
    
    public enum TTSModel: String {
       case tts1 = "tts-1"
       case tts1HD = "tts-1-hd"
+      case gpt4oMiniTTS = "gpt-4o-mini-tts"
    }
    
    public enum Voice: String {
       case alloy
+      case ballad
       case echo
       case fable
       case onyx
@@ -35,7 +39,8 @@ public struct AudioSpeechParameters: Encodable {
       case shimmer
       case ash
       case coral
-      case sage      
+      case sage
+      case verse
    }
    
    public enum ResponseFormat: String {
@@ -43,12 +48,15 @@ public struct AudioSpeechParameters: Encodable {
       case opus
       case aac
       case flac
+      case wav
+      case pcm
    }
    
    enum CodingKeys: String, CodingKey {
        case model
        case input
        case voice
+       case instructions
        case responseFormat = "response_format"
        case speed
    }
@@ -58,12 +66,14 @@ public struct AudioSpeechParameters: Encodable {
       input: String,
       voice: Voice,
       responseFormat: ResponseFormat? = nil,
+      instructions: String? = nil,
       speed: Double? = nil)
    {
        self.model = model.rawValue
        self.input = input
        self.voice = voice.rawValue
        self.responseFormat = responseFormat?.rawValue
+       self.instructions = instructions
        self.speed = speed
    }
 }
