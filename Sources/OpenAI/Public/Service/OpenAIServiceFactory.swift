@@ -87,6 +87,9 @@ public class OpenAIServiceFactory {
    public static func service(
       aiproxyPartialKey: String,
       aiproxyServiceURL: String? = nil,
+      proxyPath: String,
+      apiVersion: String,
+      extraHeaders: [String: String]? = nil,
       aiproxyClientID: String? = nil,
       debugEnabled: Bool = false)
       -> OpenAIService
@@ -94,6 +97,9 @@ public class OpenAIServiceFactory {
       AIProxyService(
         partialKey: aiproxyPartialKey,
         serviceURL: aiproxyServiceURL,
+        proxyPath: proxyPath,
+        apiVersion: apiVersion,
+        extraHeaders: extraHeaders,
         clientID: aiproxyClientID,
         debugEnabled: debugEnabled
       )

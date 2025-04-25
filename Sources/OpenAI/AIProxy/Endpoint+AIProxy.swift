@@ -69,12 +69,19 @@ extension Endpoint {
       if let betaHeaderField {
          request.addValue(betaHeaderField, forHTTPHeaderField: "OpenAI-Beta")
       }
+      openAIEnvironment.extraHeaders?.forEach {
+          request.addValue($0.value, forHTTPHeaderField: $0.key)
+      }
       if let clientID = clientID ?? getClientID() {
           request.addValue(clientID, forHTTPHeaderField: "aiproxy-client-id")
       }
       if let deviceCheckToken = await getDeviceCheckToken() {
           request.addValue(deviceCheckToken, forHTTPHeaderField: "aiproxy-devicecheck")
       }
+       let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+       let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+       request.addValue("v3|\(bundleID)|\(appVersion)|0.93.0|\(Date().timeIntervalSince1970)", forHTTPHeaderField: "aiproxy-metadata")
+       
 #if DEBUG && targetEnvironment(simulator)
       if let deviceCheckBypass = ProcessInfo.processInfo.environment["AIPROXY_DEVICE_CHECK_BYPASS"] {
          request.addValue(deviceCheckBypass, forHTTPHeaderField: "aiproxy-devicecheck-bypass")
@@ -108,6 +115,12 @@ extension Endpoint {
       if let clientID = clientID ?? getClientID() {
           request.addValue(clientID, forHTTPHeaderField: "aiproxy-client-id")
       }
+      openAIEnvironment.extraHeaders?.forEach {
+          request.addValue($0.value, forHTTPHeaderField: $0.key)
+      }
+      let bundleID = Bundle.main.bundleIdentifier ?? "unknown"
+      let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+      request.addValue("v3|\(bundleID)|\(appVersion)|0.93.0|\(Date().timeIntervalSince1970)", forHTTPHeaderField: "aiproxy-metadata")
       if let deviceCheckToken = await getDeviceCheckToken() {
           request.addValue(deviceCheckToken, forHTTPHeaderField: "aiproxy-devicecheck")
       }

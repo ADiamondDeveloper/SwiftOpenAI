@@ -48,7 +48,8 @@ struct DefaultOpenAIService: OpenAIService {
       self.openAIEnvironment = OpenAIEnvironment(
           baseURL: baseURL ?? "https://api.openai.com",
           proxyPath: proxyPath,
-          version: overrideVersion ?? "v1"
+          version: overrideVersion ?? "v1",
+          extraHeaders: nil
       )
       self.debugEnabled = debugEnabled
    }

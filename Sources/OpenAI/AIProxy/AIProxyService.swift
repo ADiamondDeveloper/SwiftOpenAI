@@ -49,6 +49,9 @@ struct AIProxyService: OpenAIService {
    init(
       partialKey: String,
       serviceURL: String? = nil,
+      proxyPath: String,
+      apiVersion: String,
+      extraHeaders: [String: String]?,
       clientID: String? = nil,
       organizationID: String? = nil,
       debugEnabled: Bool)
@@ -63,7 +66,7 @@ struct AIProxyService: OpenAIService {
       self.clientID = clientID
       self.organizationID = organizationID
       self.debugEnabled = debugEnabled
-      self.openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: nil, version: "v1")
+      self.openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion, extraHeaders: extraHeaders)
    }
 
    // MARK: Audio
@@ -111,7 +114,7 @@ struct AIProxyService: OpenAIService {
    {
       var chatParameters = parameters
       chatParameters.stream = true
-      chatParameters.streamOptions = .init(includeUsage: true)
+//      chatParameters.streamOptions = .init(includeUsage: true)
       let request = try await OpenAIAPI.chat.request(aiproxyPartialKey: partialKey, clientID: clientID, organizationID: organizationID, openAIEnvironment: openAIEnvironment, method: .post, params: chatParameters)
       return try await fetchStream(debugEnabled: debugEnabled, type: ChatCompletionChunkObject.self, with: request)
    }
