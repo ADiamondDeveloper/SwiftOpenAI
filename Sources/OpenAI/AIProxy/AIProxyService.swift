@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Network
 
 private let aiproxySecureDelegate = AIProxyCertificatePinningDelegate()
 
@@ -31,6 +32,7 @@ struct AIProxyService: OpenAIService {
    private let organizationID: String?
 
    private static let assistantsBetaV2 = "assistants=v2"
+   private var resolveDNSOverTLS: Bool
 
    /// Initializes an instance of the OpenAI service with the required configurations.
    ///
@@ -40,7 +42,7 @@ struct AIProxyService: OpenAIService {
    ///                 for details on acquiring your partial key. This is required.
    ///   - serviceURL: Your service URL, also provided during the integration process. If you integrated before
    ///                 July 22nd, 2024, you can leave this parameter blank, and it will default to
-   ///                 `"https://api.aiproxy.pro"`. This is optional.
+   ///                 `"https://api.aiproxy.com"`. This is optional.
    ///   - clientID: An optional client ID to annotate requests in the AIProxy developer dashboard.
    ///               If left blank, AIProxy generates client IDs for you. Most users can safely leave this blank.
    ///   - organizationID: An optional OpenAI organization ID. Refer to the [organization documentation](https://platform.openai.com/docs/api-reference/organization-optional)
@@ -54,19 +56,32 @@ struct AIProxyService: OpenAIService {
       extraHeaders: [String: String]?,
       clientID: String? = nil,
       organizationID: String? = nil,
+      resolveDNSOverTLS: Bool = true,
       debugEnabled: Bool)
    {
+      if resolveDNSOverTLS {
+         let host = NWEndpoint.hostPort(host: "one.one.one.one", port: 853)
+         let endpoints: [NWEndpoint] = [
+            .hostPort(host: "1.1.1.1", port: 853),
+            .hostPort(host: "1.0.0.1", port: 853),
+            .hostPort(host: "2606:4700:4700::1111", port: 853),
+            .hostPort(host: "2606:4700:4700::1001", port: 853)
+         ]
+         NWParameters.PrivacyContext.default.requireEncryptedNameResolution(true, fallbackResolver: .tls(host, serverAddresses: endpoints))
+       }
+       
       self.session = URLSession(
-         configuration: .default,
-         delegate: aiproxySecureDelegate,
-         delegateQueue: nil
+        configuration: .default,
+        delegate: aiproxySecureDelegate,
+        delegateQueue: nil
       )
+      self.resolveDNSOverTLS = resolveDNSOverTLS
       self.decoder = JSONDecoder()
       self.partialKey = partialKey
       self.clientID = clientID
       self.organizationID = organizationID
       self.debugEnabled = debugEnabled
-      self.openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion, extraHeaders: extraHeaders)
+      self.openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.com", proxyPath: proxyPath, version: apiVersion, extraHeaders: extraHeaders)
    }
 
    // MARK: Audio

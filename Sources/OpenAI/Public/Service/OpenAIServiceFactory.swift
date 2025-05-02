@@ -83,7 +83,7 @@ public class OpenAIServiceFactory {
    ///                      the `clientID` argument out, and IDs will be generated automatically for you.
    ///   - debugEnabled: If `true` service prints event on DEBUG builds, default to `false`.
    ///
-   /// - Returns: A conformer of OpenAIService that proxies all requests through api.aiproxy.pro
+   /// - Returns: A conformer of OpenAIService that proxies all requests through api.aiproxy.com
    public static func service(
       aiproxyPartialKey: String,
       aiproxyServiceURL: String? = nil,
