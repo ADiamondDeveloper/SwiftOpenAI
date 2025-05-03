@@ -32,7 +32,7 @@ struct LocalModelService: OpenAIService {
       self.session = URLSession(configuration: configuration)
       self.decoder = decoder
       self.apiKey = apiKey
-      self.openAIEnvironment = OpenAIEnvironment(baseURL: baseURL, proxyPath: proxyPath, version: overrideVersion ?? "v1", extraHeaders: nil)
+       self.openAIEnvironment = OpenAIEnvironment(baseURL: baseURL, proxyPath: proxyPath, version: overrideVersion ?? "v1", includeUsage: true, extraHeaders: nil)
       self.debugEnabled = debugEnabled
    }
    
@@ -64,7 +64,7 @@ struct LocalModelService: OpenAIService {
    {
       var chatParameters = parameters
       chatParameters.stream = true
-      chatParameters.streamOptions = .init(includeUsage: true)
+      chatParameters.streamOptions = .init(includeUsage: openAIEnvironment.includeUsage)
       let request = try LocalModelAPI.chat.request(apiKey: apiKey, openAIEnvironment: openAIEnvironment, organizationID: nil, method: .post, params: chatParameters)
       return try await fetchStream(debugEnabled: debugEnabled, type: ChatCompletionChunkObject.self, with: request)
    }

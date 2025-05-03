@@ -89,6 +89,7 @@ public class OpenAIServiceFactory {
       aiproxyServiceURL: String? = nil,
       proxyPath: String,
       apiVersion: String,
+      includeUsage: Bool,
       extraHeaders: [String: String]? = nil,
       aiproxyClientID: String? = nil,
       debugEnabled: Bool = false)
@@ -99,6 +100,7 @@ public class OpenAIServiceFactory {
         serviceURL: aiproxyServiceURL,
         proxyPath: proxyPath,
         apiVersion: apiVersion,
+        includeUsage: includeUsage,
         extraHeaders: extraHeaders,
         clientID: aiproxyClientID,
         debugEnabled: debugEnabled
