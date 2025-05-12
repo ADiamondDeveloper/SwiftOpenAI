@@ -92,6 +92,7 @@ public class OpenAIServiceFactory {
       includeUsage: Bool,
       extraHeaders: [String: String]? = nil,
       aiproxyClientID: String? = nil,
+      resolveDNSOverTLS: Bool,
       debugEnabled: Bool = false)
       -> OpenAIService
    {
@@ -103,6 +104,7 @@ public class OpenAIServiceFactory {
         includeUsage: includeUsage,
         extraHeaders: extraHeaders,
         clientID: aiproxyClientID,
+        resolveDNSOverTLS: resolveDNSOverTLS,
         debugEnabled: debugEnabled
       )
    }

@@ -57,7 +57,7 @@ struct AIProxyService: OpenAIService {
       extraHeaders: [String: String]?,
       clientID: String? = nil,
       organizationID: String? = nil,
-      resolveDNSOverTLS: Bool = true,
+      resolveDNSOverTLS: Bool,
       debugEnabled: Bool)
    {
       if resolveDNSOverTLS {
