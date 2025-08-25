@@ -88,6 +88,7 @@ public class OpenAIServiceFactory {
     aiproxyServiceURL: String? = nil,
     aiproxyProxyPath: String? = nil,
     aiproxyApiVersion: String? = nil,
+    includeUsage: Bool,
     aiproxyClientID: String? = nil,
     debugEnabled: Bool = false)
     -> OpenAIService

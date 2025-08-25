@@ -31,6 +31,7 @@ struct AIProxyService: OpenAIService {
     serviceURL: String? = nil,
     proxyPath: String? = nil,
     apiVersion: String? = nil,
+    includeUsage: Bool = false,
     clientID: String? = nil,
     organizationID: String? = nil,
     debugEnabled: Bool)
@@ -40,7 +41,7 @@ struct AIProxyService: OpenAIService {
     self.clientID = clientID
     self.organizationID = organizationID
     self.debugEnabled = debugEnabled
-    openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion ?? "v1")
+    openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion ?? "v1", includeUsage: includeUsage)
     httpClient = URLSessionHTTPClientAdapter(
       urlSession: URLSession(
         configuration: .default,
@@ -121,7 +122,9 @@ struct AIProxyService: OpenAIService {
   {
     var chatParameters = parameters
     chatParameters.stream = true
-    chatParameters.streamOptions = .init(includeUsage: true)
+    if openAIEnvironment.includeUsage {
+        chatParameters.streamOptions = .init(includeUsage: true)
+    }
     let request = try await OpenAIAPI.chat.request(
       aiproxyPartialKey: partialKey,
       clientID: clientID,
