@@ -31,6 +31,7 @@ struct AIProxyService: OpenAIService {
     serviceURL: String? = nil,
     proxyPath: String? = nil,
     apiVersion: String? = nil,
+    extraHeaders: [String: String]? = nil,
     includeUsage: Bool = false,
     clientID: String? = nil,
     organizationID: String? = nil,
@@ -41,7 +42,7 @@ struct AIProxyService: OpenAIService {
     self.clientID = clientID
     self.organizationID = organizationID
     self.debugEnabled = debugEnabled
-    openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion ?? "v1", includeUsage: includeUsage)
+    openAIEnvironment = .init(baseURL: serviceURL ?? "https://api.aiproxy.pro", proxyPath: proxyPath, version: apiVersion ?? "v1", extraHeaders: extraHeaders, includeUsage: includeUsage)
     httpClient = URLSessionHTTPClientAdapter(
       urlSession: URLSession(
         configuration: .default,

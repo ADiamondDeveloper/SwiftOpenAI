@@ -55,6 +55,11 @@ extension Endpoint {
     if let betaHeaderField {
       request.addValue(betaHeaderField, forHTTPHeaderField: "OpenAI-Beta")
     }
+
+    openAIEnvironment.extraHeaders?.forEach {
+        request.addValue($0.value, forHTTPHeaderField: $0.key)
+    }
+
     if let clientID = clientID ?? getClientID() {
       request.addValue(clientID, forHTTPHeaderField: "aiproxy-client-id")
     }
@@ -94,6 +99,11 @@ extension Endpoint {
     if let clientID = clientID ?? getClientID() {
       request.addValue(clientID, forHTTPHeaderField: "aiproxy-client-id")
     }
+      
+    openAIEnvironment.extraHeaders?.forEach {
+        request.addValue($0.value, forHTTPHeaderField: $0.key)
+    }
+
     if let deviceCheckToken = await getDeviceCheckToken() {
       request.addValue(deviceCheckToken, forHTTPHeaderField: "aiproxy-devicecheck")
     }

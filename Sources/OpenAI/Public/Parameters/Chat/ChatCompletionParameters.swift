@@ -39,8 +39,9 @@ public struct ChatCompletionParameters: Encodable {
     temperature: Double? = nil,
     topProbability: Double? = nil,
     user: String? = nil,
-    streamOptions: StreamOptions? = nil)
-  {
+    streamOptions: StreamOptions? = nil,
+    searchParameters: SearchParameters? = nil
+  ) {
     self.messages = messages
     self.model = model.value
     self.store = store
@@ -70,6 +71,7 @@ public struct ChatCompletionParameters: Encodable {
     topP = topProbability
     self.user = user
     self.streamOptions = streamOptions
+    self.searchParameters = searchParameters
   }
 
   public struct Message: Encodable {
@@ -531,6 +533,7 @@ public struct ChatCompletionParameters: Encodable {
     case temperature
     case topP = "top_p"
     case user
+    case searchParameters = "search_parameters"
   }
 
   /// If set, partial message deltas will be sent, like in ChatGPT. Tokens will be sent as data-only [server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#event_stream_format) as they become available, with the stream terminated by a data: [DONE] message. [Example Python code](https://cookbook.openai.com/examples/how_to_stream_completions ).
@@ -538,4 +541,55 @@ public struct ChatCompletionParameters: Encodable {
   var stream: Bool? = nil
   /// Options for streaming response. Only set this when you set stream: true
   var streamOptions: StreamOptions?
+  /// Options for enabling search capabilities for Grok AI
+  var searchParameters: SearchParameters?
+}
+
+extension ChatCompletionParameters {
+    
+    public struct SearchParameters: Encodable {
+        public enum Mode: String, Encodable {
+            case on, off, auto
+        }
+        
+        public struct Source: Encodable {
+            public enum SourceType: String, Encodable {
+                case rss, x, web
+            }
+            
+            public let type: SourceType
+            public let links: [String]?
+            public let postFavoriteCount: Int?
+            public let postViewCount: Int?
+            public let excludedXHandles: [String]?
+            public let country: String?
+            
+            enum CodingKeys: String, CodingKey {
+                case type
+                case links
+                case postFavoriteCount = "post_favorite_count"
+                case postViewCount = "post_view_count"
+                case excludedXHandles = "excluded_x_handles"
+                case country
+            }
+        }
+        
+        public let mode: Mode
+        public let sources: [Source]?
+        public let maxSearchResults: Int?
+        
+        enum CodingKeys: String, CodingKey {
+            case mode
+            case sources
+            case maxSearchResults = "max_search_results"
+        }
+        
+        public init(mode: Mode = .auto, sources: [Source]? = nil, maxSearchResults: Int? = nil) {
+            self.mode = mode
+            self.sources = sources
+            self.maxSearchResults = maxSearchResults
+        }
+    }
+
+    
 }

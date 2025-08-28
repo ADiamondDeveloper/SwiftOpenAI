@@ -74,6 +74,7 @@ public struct OpenAIEnvironment {
   /// An optional version of the OpenAI API to use.
   /// Example: "v1"
   let version: String?
+  let extraHeaders: [String: String]?
     
   let includeUsage: Bool
 }

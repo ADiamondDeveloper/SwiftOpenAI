@@ -20,7 +20,7 @@ struct LocalModelService: OpenAIService {
     self.httpClient = httpClient
     self.decoder = decoder
     self.apiKey = apiKey
-      openAIEnvironment = OpenAIEnvironment(baseURL: baseURL, proxyPath: proxyPath, version: overrideVersion ?? "v1", includeUsage: true)
+    openAIEnvironment = OpenAIEnvironment(baseURL: baseURL, proxyPath: proxyPath, version: overrideVersion ?? "v1", extraHeaders: nil, includeUsage: true)
     self.debugEnabled = debugEnabled
   }
 

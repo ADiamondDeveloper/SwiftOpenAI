@@ -25,6 +25,7 @@ public final class DefaultOpenAIAzureService: OpenAIService {
       baseURL: "https://\(azureConfiguration.resourceName)/openai.azure.com",
       proxyPath: nil,
       version: nil,
+      extraHeaders: nil,
       includeUsage: true
     )
     apiKey = azureConfiguration.openAIAPIKey
