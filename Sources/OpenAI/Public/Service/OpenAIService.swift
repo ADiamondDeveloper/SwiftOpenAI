@@ -129,6 +129,22 @@ public protocol OpenAIService {
     parameters: AudioSpeechParameters)
     async throws -> AudioSpeechObject
 
+  /// Creates a realtime audio session for bidirectional streaming conversation with OpenAI.
+  ///
+  /// - Parameters:
+  ///   - model: The model to use for the realtime session (e.g., "gpt-4o-mini-realtime-preview-2024-12-17")
+  ///   - configuration: Session configuration including voice, turn detection, and other settings
+  /// - Returns: An `OpenAIRealtimeSession` for managing the WebSocket connection
+  /// - Throws: An error if the session creation fails
+  ///
+  /// For more information, refer to [OpenAI's Realtime API documentation](https://platform.openai.com/docs/api-reference/realtime).
+  #if canImport(AVFoundation)
+  func realtimeSession(
+    model: String,
+    configuration: OpenAIRealtimeSessionConfiguration)
+    async throws -> OpenAIRealtimeSession
+  #endif
+
   // MARK: Chat
 
   /// - Parameter parameters: Parameters for the chat completion request.
@@ -992,9 +1008,21 @@ public protocol OpenAIService {
   /// [The Response object matching the specified ID.](https://platform.openai.com/docs/api-reference/responses/get)
   ///
   /// - Parameter id: The ID of the ResponseModel
+  /// - Parameter parameters: Optional query parameters for the request
   func responseModel(
-    id: String)
+    id: String,
+    parameters: GetResponseParameter?)
     async throws -> ResponseModel
+
+  /// Returns a streaming [Response](https://platform.openai.com/docs/api-reference/responses/get) object for a specific response ID.
+  ///
+  /// - Parameter id: The ID of the ResponseModel
+  /// - Parameter parameters: Optional query parameters for the request (stream will be set to true)
+  /// - Returns: An AsyncThrowingStream of ResponseStreamEvent objects
+  func responseModelStream(
+    id: String,
+    parameters: GetResponseParameter?)
+    async throws -> AsyncThrowingStream<ResponseStreamEvent, Error>
 
   /// Returns a streaming [Response](https://platform.openai.com/docs/api-reference/responses/object) object.
   ///
@@ -1003,6 +1031,77 @@ public protocol OpenAIService {
   func responseCreateStream(
     _ parameters: ModelResponseParameter)
     async throws -> AsyncThrowingStream<ResponseStreamEvent, Error>
+
+  /// [Deletes a model response with the given ID.](https://platform.openai.com/docs/api-reference/responses/delete)
+  ///
+  /// - Parameter id: The ID of the response to delete
+  /// - Returns: A DeletionStatus object confirming the deletion
+  func responseDelete(
+    id: String)
+    async throws -> DeletionStatus
+
+  /// [Cancels a model response with the given ID.](https://platform.openai.com/docs/api-reference/responses/cancel)
+  /// Only responses created with the background parameter set to true can be cancelled.
+  ///
+  /// - Parameter id: The ID of the response to cancel
+  /// - Returns: A Response object
+  func responseCancel(
+    id: String)
+    async throws -> ResponseModel
+
+  /// [Returns a list of input items for a given response.](https://platform.openai.com/docs/api-reference/responses/input-items)
+  ///
+  /// - Parameter id: The ID of the response to retrieve input items for
+  /// - Parameter parameters: Optional query parameters for pagination and filtering
+  /// - Returns: A list of input item objects
+  func responseInputItems(
+    id: String,
+    parameters: GetInputItemsParameter?)
+    async throws -> OpenAIResponse<InputItem>
+
+  // MARK: - Conversations
+
+  /// [Create a conversation.](https://platform.openai.com/docs/api-reference/conversations/create)
+  ///
+  /// - Parameter parameters: The conversation creation parameters
+  /// - Returns: A Conversation object
+  func conversationCreate(
+    parameters: CreateConversationParameter?)
+    async throws -> ConversationModel
+
+  func getConversation(
+    id: String)
+    async throws -> ConversationModel
+
+  func updateConversation(
+    id: String,
+    parameters: UpdateConversationParameter)
+    async throws -> ConversationModel
+
+  func deleteConversation(
+    id: String)
+    async throws -> DeletionStatus
+
+  func getConversationItems(
+    id: String,
+    parameters: GetConversationItemsParameter?)
+    async throws -> OpenAIResponse<InputItem>
+
+  func createConversationItems(
+    id: String,
+    parameters: CreateConversationItemsParameter)
+    async throws -> OpenAIResponse<InputItem>
+
+  func getConversationItem(
+    conversationID: String,
+    itemID: String,
+    parameters: GetConversationItemParameter?)
+    async throws -> InputItem
+
+  func deleteConversationItem(
+    conversationID: String,
+    itemID: String)
+    async throws -> ConversationModel
 }
 
 extension OpenAIService {
@@ -1036,7 +1135,7 @@ extension OpenAIService {
         description: errorMessage,
         statusCode: response.statusCode)
     }
-    var content: [[String: Any]] = []
+    var content = [[String: Any]]()
     if let jsonString = String(data: data, encoding: String.Encoding.utf8) {
       let lines = jsonString.split(separator: "\n")
       for line in lines {

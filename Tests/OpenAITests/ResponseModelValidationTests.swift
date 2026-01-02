@@ -109,8 +109,8 @@ final class ResponseModelValidationTests: XCTestCase {
     }
 
     // Validate tools
-    XCTAssertEqual(responseModel.tools.count, 1)
-    if case .webSearch(let webSearchTool) = responseModel.tools[0] {
+    XCTAssertEqual(responseModel.tools?.count, 1)
+    if let tools = responseModel.tools, case .webSearch(let webSearchTool) = tools[0] {
       // Check that the type is webSearchPreview
       if case .webSearchPreview = webSearchTool.type {
         // Type is correct
@@ -141,8 +141,8 @@ final class ResponseModelValidationTests: XCTestCase {
     }
 
     // Validate tools
-    XCTAssertEqual(responseModel.tools.count, 1)
-    if case .fileSearch(let fileSearchTool) = responseModel.tools[0] {
+    XCTAssertEqual(responseModel.tools?.count, 1)
+    if let tools = responseModel.tools, case .fileSearch(let fileSearchTool) = tools[0] {
       XCTAssertEqual(fileSearchTool.type, "file_search")
       XCTAssertEqual(fileSearchTool.maxNumResults, 20)
       XCTAssertNotNil(fileSearchTool.rankingOptions)
@@ -171,8 +171,8 @@ final class ResponseModelValidationTests: XCTestCase {
     }
 
     // Validate tools
-    XCTAssertEqual(responseModel.tools.count, 1)
-    if case .function(let functionTool) = responseModel.tools[0] {
+    XCTAssertEqual(responseModel.tools?.count, 1)
+    if let tools = responseModel.tools, case .function(let functionTool) = tools[0] {
       XCTAssertEqual(functionTool.name, "get_current_weather")
       XCTAssertEqual(functionTool.strict, true)
     } else {
@@ -192,6 +192,62 @@ final class ResponseModelValidationTests: XCTestCase {
     // Validate reasoning tokens
     XCTAssertEqual(responseModel.usage?.outputTokensDetails?.reasoningTokens, 832)
     XCTAssertEqual(responseModel.usage?.outputTokens, 1035)
+  }
+
+  // MARK: - InstructionsType Tests
+
+  func testInstructionsTypeStringDecoding() throws {
+    let decoder = JSONDecoder()
+    let responseModel = try decoder.decode(ResponseModel.self, from: instructionsStringJSON.data(using: .utf8)!)
+
+    XCTAssertNotNil(responseModel.instructions)
+    if case .string(let value) = responseModel.instructions {
+      XCTAssertEqual(value, "You are a helpful assistant.")
+    } else {
+      XCTFail("Expected string instructions type")
+    }
+  }
+
+  func testInstructionsTypeArrayOfStringsDecoding() throws {
+    let decoder = JSONDecoder()
+    let responseModel = try decoder.decode(ResponseModel.self, from: instructionsArrayOfStringsJSON.data(using: .utf8)!)
+
+    XCTAssertNotNil(responseModel.instructions)
+    if case .array(let values) = responseModel.instructions {
+      XCTAssertEqual(values.count, 2)
+      XCTAssertEqual(values[0], "Be helpful.")
+      XCTAssertEqual(values[1], "Be concise.")
+    } else {
+      XCTFail("Expected array of strings instructions type")
+    }
+  }
+
+  func testInstructionsTypeMessagesDecoding() throws {
+    // This tests the fix for issue #187 - reusable prompts return instructions as message objects
+    let decoder = JSONDecoder()
+    let responseModel = try decoder.decode(ResponseModel.self, from: instructionsMessagesJSON.data(using: .utf8)!)
+
+    XCTAssertNotNil(responseModel.instructions)
+    if case .messages(let messages) = responseModel.instructions {
+      XCTAssertEqual(messages.count, 2)
+      XCTAssertEqual(messages[0].role, "developer")
+      XCTAssertEqual(messages[0].type, "message")
+      XCTAssertEqual(messages[1].role, "assistant")
+
+      // Validate content of first message
+      if case .array(let contentItems) = messages[0].content {
+        XCTAssertEqual(contentItems.count, 1)
+        if case .text(let textContent) = contentItems[0] {
+          XCTAssertEqual(textContent.text, "You are a helpful assistant for {{customer_name}}.")
+        } else {
+          XCTFail("Expected text content item")
+        }
+      } else {
+        XCTFail("Expected array content in message")
+      }
+    } else {
+      XCTFail("Expected messages instructions type")
+    }
   }
 
   // MARK: - Test Data
@@ -674,6 +730,116 @@ final class ResponseModelValidationTests: XCTestCase {
           "reasoning_tokens": 832
         },
         "total_tokens": 1116
+      },
+      "user": null,
+      "metadata": {}
+    }
+    """
+
+  // MARK: - InstructionsType Test Data
+
+  private let instructionsStringJSON = """
+    {
+      "id": "resp_test_string_instructions",
+      "object": "response",
+      "created_at": 1741476542,
+      "status": "completed",
+      "error": null,
+      "incomplete_details": null,
+      "instructions": "You are a helpful assistant.",
+      "max_output_tokens": null,
+      "model": "gpt-4.1-2025-04-14",
+      "output": [],
+      "parallel_tool_calls": true,
+      "previous_response_id": null,
+      "reasoning": null,
+      "store": true,
+      "temperature": 1.0,
+      "text": null,
+      "tool_choice": "auto",
+      "tools": [],
+      "top_p": 1.0,
+      "truncation": "disabled",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 10,
+        "total_tokens": 20
+      },
+      "user": null,
+      "metadata": {}
+    }
+    """
+
+  private let instructionsArrayOfStringsJSON = """
+    {
+      "id": "resp_test_array_instructions",
+      "object": "response",
+      "created_at": 1741476542,
+      "status": "completed",
+      "error": null,
+      "incomplete_details": null,
+      "instructions": ["Be helpful.", "Be concise."],
+      "max_output_tokens": null,
+      "model": "gpt-4.1-2025-04-14",
+      "output": [],
+      "parallel_tool_calls": true,
+      "previous_response_id": null,
+      "reasoning": null,
+      "store": true,
+      "temperature": 1.0,
+      "text": null,
+      "tool_choice": "auto",
+      "tools": [],
+      "top_p": 1.0,
+      "truncation": "disabled",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 10,
+        "total_tokens": 20
+      },
+      "user": null,
+      "metadata": {}
+    }
+    """
+
+  /// This JSON represents the response format when using reusable prompts with variables (issue #187)
+  private let instructionsMessagesJSON = """
+    {
+      "id": "resp_test_messages_instructions",
+      "object": "response",
+      "created_at": 1741476542,
+      "status": "completed",
+      "error": null,
+      "incomplete_details": null,
+      "instructions": [
+        {
+          "type": "message",
+          "content": [{"type": "input_text", "text": "You are a helpful assistant for {{customer_name}}."}],
+          "role": "developer"
+        },
+        {
+          "type": "message",
+          "content": [{"type": "input_text", "text": ""}],
+          "role": "assistant"
+        }
+      ],
+      "max_output_tokens": null,
+      "model": "gpt-4.1-2025-04-14",
+      "output": [],
+      "parallel_tool_calls": true,
+      "previous_response_id": null,
+      "reasoning": null,
+      "store": true,
+      "temperature": 1.0,
+      "text": null,
+      "tool_choice": "auto",
+      "tools": [],
+      "top_p": 1.0,
+      "truncation": "disabled",
+      "usage": {
+        "input_tokens": 10,
+        "output_tokens": 10,
+        "total_tokens": 20
       },
       "user": null,
       "metadata": {}

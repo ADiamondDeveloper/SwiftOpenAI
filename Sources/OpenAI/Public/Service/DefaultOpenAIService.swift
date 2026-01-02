@@ -82,6 +82,66 @@ struct DefaultOpenAIService: OpenAIService {
     return AudioSpeechObject(output: data)
   }
 
+  #if canImport(AVFoundation)
+  func realtimeSession(
+    model: String,
+    configuration: OpenAIRealtimeSessionConfiguration)
+    async throws -> OpenAIRealtimeSession
+  {
+    // Build the WebSocket URL
+    let baseURL = openAIEnvironment.baseURL.replacingOccurrences(of: "https://", with: "wss://")
+    let version = openAIEnvironment.version ?? "v1"
+
+    // Check if this is an Azure endpoint (contains "azure_openai" in base URL or proxy path)
+    let isAzureEndpoint = openAIEnvironment.baseURL.contains("azure_openai") ||
+      (openAIEnvironment.proxyPath?.contains("azure_openai") ?? false)
+
+    let path: String
+    let urlString: String
+
+    if isAzureEndpoint {
+      // Azure format: path/realtime?api-version=X&deployment=Y
+      // For Airbnb's Azure proxy, deployment is passed as a query parameter
+      path = openAIEnvironment.proxyPath ?? ""
+      urlString = "\(baseURL)/\(path)/realtime?api-version=\(version)&deployment=\(model)"
+    } else {
+      // OpenAI format: path/version/realtime?model=Y
+      path = openAIEnvironment.proxyPath.map { "\($0)/\(version)" } ?? version
+      urlString = "\(baseURL)/\(path)/realtime?model=\(model)"
+    }
+
+    guard let url = URL(string: urlString) else {
+      throw APIError.requestFailed(description: "Invalid realtime session URL")
+    }
+
+    // Create the WebSocket request with auth headers
+    var request = URLRequest(url: url)
+    request.setValue(apiKey.value, forHTTPHeaderField: apiKey.headerField)
+
+    // Only add openai-beta header for non-Azure endpoints
+    if !isAzureEndpoint {
+      request.setValue("realtime=v1", forHTTPHeaderField: "openai-beta")
+    }
+
+    if let organizationID {
+      request.setValue(organizationID, forHTTPHeaderField: "OpenAI-Organization")
+    }
+
+    // Add any extra headers
+    extraHeaders?.forEach { key, value in
+      request.setValue(value, forHTTPHeaderField: key)
+    }
+
+    // Create the WebSocket task
+    let webSocketTask = URLSession.shared.webSocketTask(with: request)
+
+    // Return the realtime session
+    return OpenAIRealtimeSession(
+      webSocketTask: webSocketTask,
+      sessionConfiguration: configuration)
+  }
+  #endif
+
   // MARK: Chat
 
   func startChat(
@@ -153,7 +213,7 @@ struct DefaultOpenAIService: OpenAIService {
     limit: Int? = nil)
     async throws -> OpenAIResponse<FineTuningJobObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let lastJobID, let limit {
       queryItems = [.init(name: "after", value: lastJobID), .init(name: "limit", value: "\(limit)")]
     } else if let lastJobID {
@@ -204,7 +264,7 @@ struct DefaultOpenAIService: OpenAIService {
     limit: Int? = nil)
     async throws -> OpenAIResponse<FineTuningJobEventObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let lastEventId, let limit {
       queryItems = [.init(name: "after", value: lastEventId), .init(name: "limit", value: "\(limit)")]
     } else if let lastEventId {
@@ -508,7 +568,7 @@ struct DefaultOpenAIService: OpenAIService {
     before: String? = nil)
     async throws -> OpenAIResponse<AssistantObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -666,7 +726,7 @@ struct DefaultOpenAIService: OpenAIService {
     runID: String? = nil)
     async throws -> OpenAIResponse<MessageObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -751,7 +811,7 @@ struct DefaultOpenAIService: OpenAIService {
     before: String? = nil)
     async throws -> OpenAIResponse<RunObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -849,7 +909,7 @@ struct DefaultOpenAIService: OpenAIService {
     before: String? = nil)
     async throws -> OpenAIResponse<RunStepObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -974,7 +1034,7 @@ struct DefaultOpenAIService: OpenAIService {
     limit: Int? = nil)
     async throws -> OpenAIResponse<BatchObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -1015,7 +1075,7 @@ struct DefaultOpenAIService: OpenAIService {
     before: String? = nil)
     async throws -> OpenAIResponse<VectorStoreObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -1110,7 +1170,7 @@ struct DefaultOpenAIService: OpenAIService {
     filter: String? = nil)
     async throws -> OpenAIResponse<VectorStoreFileObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -1225,7 +1285,7 @@ struct DefaultOpenAIService: OpenAIService {
     filter: String? = nil)
     async throws -> OpenAIResponse<VectorStoreFileObject>
   {
-    var queryItems: [URLQueryItem] = []
+    var queryItems = [URLQueryItem]()
     if let limit {
       queryItems.append(.init(name: "limit", value: "\(limit)"))
     }
@@ -1271,16 +1331,72 @@ struct DefaultOpenAIService: OpenAIService {
   }
 
   func responseModel(
-    id: String)
+    id: String,
+    parameters: GetResponseParameter? = nil)
     async throws -> ResponseModel
   {
+    var queryItems = [URLQueryItem]()
+
+    if let parameters {
+      if let include = parameters.include {
+        for item in include {
+          queryItems.append(URLQueryItem(name: "include", value: item))
+        }
+      }
+      if let includeObfuscation = parameters.includeObfuscation {
+        queryItems.append(URLQueryItem(name: "include_obfuscation", value: String(includeObfuscation)))
+      }
+      if let startingAfter = parameters.startingAfter {
+        queryItems.append(URLQueryItem(name: "starting_after", value: String(startingAfter)))
+      }
+      if let stream = parameters.stream {
+        queryItems.append(URLQueryItem(name: "stream", value: String(stream)))
+      }
+    }
+
     let request = try OpenAIAPI.response(.get(responseID: id)).request(
       apiKey: apiKey,
       openAIEnvironment: openAIEnvironment,
       organizationID: organizationID,
-      method: .post,
+      method: .get,
+      queryItems: queryItems,
       extraHeaders: extraHeaders)
     return try await fetch(debugEnabled: debugEnabled, type: ResponseModel.self, with: request)
+  }
+
+  func responseModelStream(
+    id: String,
+    parameters: GetResponseParameter? = nil)
+    async throws -> AsyncThrowingStream<ResponseStreamEvent, Error>
+  {
+    var streamParameters = parameters ?? GetResponseParameter()
+    streamParameters.stream = true
+
+    var queryItems = [URLQueryItem]()
+
+    if let include = streamParameters.include {
+      for item in include {
+        queryItems.append(URLQueryItem(name: "include", value: item))
+      }
+    }
+    if let includeObfuscation = streamParameters.includeObfuscation {
+      queryItems.append(URLQueryItem(name: "include_obfuscation", value: String(includeObfuscation)))
+    }
+    if let startingAfter = streamParameters.startingAfter {
+      queryItems.append(URLQueryItem(name: "starting_after", value: String(startingAfter)))
+    }
+    if let stream = streamParameters.stream {
+      queryItems.append(URLQueryItem(name: "stream", value: String(stream)))
+    }
+
+    let request = try OpenAIAPI.response(.get(responseID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .get,
+      queryItems: queryItems,
+      extraHeaders: extraHeaders)
+    return try await fetchStream(debugEnabled: debugEnabled, type: ResponseStreamEvent.self, with: request)
   }
 
   func responseCreateStream(
@@ -1297,6 +1413,220 @@ struct DefaultOpenAIService: OpenAIService {
       params: responseParameters,
       extraHeaders: extraHeaders)
     return try await fetchStream(debugEnabled: debugEnabled, type: ResponseStreamEvent.self, with: request)
+  }
+
+  func responseDelete(
+    id: String)
+    async throws -> DeletionStatus
+  {
+    let request = try OpenAIAPI.response(.delete(responseID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .delete,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: DeletionStatus.self, with: request)
+  }
+
+  func responseCancel(
+    id: String)
+    async throws -> ResponseModel
+  {
+    let request = try OpenAIAPI.response(.cancel(responseID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .post,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: ResponseModel.self, with: request)
+  }
+
+  func responseInputItems(
+    id: String,
+    parameters: GetInputItemsParameter?)
+    async throws -> OpenAIResponse<InputItem>
+  {
+    var queryItems = [URLQueryItem]()
+
+    if let parameters {
+      if let after = parameters.after {
+        queryItems.append(URLQueryItem(name: "after", value: after))
+      }
+      if let include = parameters.include {
+        for item in include {
+          queryItems.append(URLQueryItem(name: "include", value: item))
+        }
+      }
+      if let limit = parameters.limit {
+        queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
+      }
+      if let order = parameters.order {
+        queryItems.append(URLQueryItem(name: "order", value: order))
+      }
+    }
+
+    let request = try OpenAIAPI.response(.inputItems(responseID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .get,
+      queryItems: queryItems,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: OpenAIResponse<InputItem>.self, with: request)
+  }
+
+  // MARK: - Conversations
+
+  func conversationCreate(
+    parameters: CreateConversationParameter?)
+    async throws -> ConversationModel
+  {
+    let request = try OpenAIAPI.conversantions(.create).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .post,
+      params: parameters,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: ConversationModel.self, with: request)
+  }
+
+  func getConversation(
+    id: String)
+    async throws -> ConversationModel
+  {
+    let request = try OpenAIAPI.conversantions(.get(conversationID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .get,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: ConversationModel.self, with: request)
+  }
+
+  func updateConversation(
+    id: String,
+    parameters: UpdateConversationParameter)
+    async throws -> ConversationModel
+  {
+    let request = try OpenAIAPI.conversantions(.update(conversationID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .post,
+      params: parameters,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: ConversationModel.self, with: request)
+  }
+
+  func deleteConversation(
+    id: String)
+    async throws -> DeletionStatus
+  {
+    let request = try OpenAIAPI.conversantions(.delete(conversationID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .delete,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: DeletionStatus.self, with: request)
+  }
+
+  func getConversationItems(
+    id: String,
+    parameters: GetConversationItemsParameter?)
+    async throws -> OpenAIResponse<InputItem>
+  {
+    var queryItems = [URLQueryItem]()
+    if let parameters {
+      if let after = parameters.after {
+        queryItems.append(URLQueryItem(name: "after", value: after))
+      }
+      if let include = parameters.include {
+        for item in include {
+          queryItems.append(URLQueryItem(name: "include", value: item))
+        }
+      }
+      if let limit = parameters.limit {
+        queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
+      }
+      if let order = parameters.order {
+        queryItems.append(URLQueryItem(name: "order", value: order))
+      }
+    }
+    let request = try OpenAIAPI.conversantions(.items(conversationID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .get,
+      queryItems: queryItems,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: OpenAIResponse<InputItem>.self, with: request)
+  }
+
+  func createConversationItems(
+    id: String,
+    parameters: CreateConversationItemsParameter)
+    async throws -> OpenAIResponse<InputItem>
+  {
+    var queryItems = [URLQueryItem]()
+    if let include = parameters.include {
+      for item in include {
+        queryItems.append(URLQueryItem(name: "include", value: item))
+      }
+    }
+
+    // Create a body-only parameter struct for encoding
+    struct BodyParameters: Codable {
+      let items: [InputItem]
+    }
+    let bodyParams = BodyParameters(items: parameters.items)
+
+    let request = try OpenAIAPI.conversantions(.createItems(conversationID: id)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .post,
+      params: bodyParams,
+      queryItems: queryItems,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: OpenAIResponse<InputItem>.self, with: request)
+  }
+
+  func getConversationItem(
+    conversationID: String,
+    itemID: String,
+    parameters: GetConversationItemParameter?)
+    async throws -> InputItem
+  {
+    var queryItems = [URLQueryItem]()
+    if let parameters, let include = parameters.include {
+      for item in include {
+        queryItems.append(URLQueryItem(name: "include", value: item))
+      }
+    }
+    let request = try OpenAIAPI.conversantions(.item(conversationID: conversationID, itemID: itemID)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .get,
+      queryItems: queryItems,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: InputItem.self, with: request)
+  }
+
+  func deleteConversationItem(
+    conversationID: String,
+    itemID: String)
+    async throws -> ConversationModel
+  {
+    let request = try OpenAIAPI.conversantions(.deleteItem(conversationID: conversationID, itemID: itemID)).request(
+      apiKey: apiKey,
+      openAIEnvironment: openAIEnvironment,
+      organizationID: organizationID,
+      method: .delete,
+      extraHeaders: extraHeaders)
+    return try await fetch(debugEnabled: debugEnabled, type: ConversationModel.self, with: request)
   }
 
   private static let assistantsBetaV2 = "assistants=v2"

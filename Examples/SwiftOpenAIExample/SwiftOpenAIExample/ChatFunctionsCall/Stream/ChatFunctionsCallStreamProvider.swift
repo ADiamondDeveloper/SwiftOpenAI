@@ -23,16 +23,19 @@ struct FunctionCallStreamedResponse {
 
 @Observable
 class ChatFunctionsCallStreamProvider {
+  init(service: OpenAIService, customModel: String? = nil) {
+    self.service = service
+    self.customModel = customModel
+  }
+
   // MARK: - Initializer
 
-  init(service: OpenAIService) {
-    self.service = service
-  }
+  let customModel: String?
 
   // MARK: - Public Properties
 
   /// To be used for UI purposes.
-  var chatDisplayMessages: [ChatMessageDisplayModel] = []
+  var chatDisplayMessages = [ChatMessageDisplayModel]()
 
   @MainActor
   func generateImage(arguments: String) async throws -> String {
@@ -84,9 +87,16 @@ class ChatFunctionsCallStreamProvider {
 
     let tools = FunctionCallDefinition.allCases.map(\.functionTool)
 
+    let model: Model =
+      if let customModel, !customModel.isEmpty {
+        .custom(customModel)
+      } else {
+        .gpt35Turbo1106
+      }
+
     let parameters = ChatCompletionParameters(
       messages: chatMessageParameters,
-      model: .gpt35Turbo1106,
+      model: model,
       toolChoice: ToolChoice.auto,
       tools: tools)
 
@@ -163,7 +173,7 @@ class ChatFunctionsCallStreamProvider {
   }
 
   func createAssistantMessage() -> ChatCompletionParameters.Message {
-    var toolCalls: [ToolCall] = []
+    var toolCalls = [ToolCall]()
     for (_, functionCallStreamedResponse) in functionCallsMap {
       let toolCall = functionCallStreamedResponse.toolCall
       // Intentionally force unwrapped to catch errrors quickly on demo. // This should be properly handled.
@@ -178,7 +188,7 @@ class ChatFunctionsCallStreamProvider {
   func createToolsMessages() async throws
     -> [ChatCompletionParameters.Message]
   {
-    var toolMessages: [ChatCompletionParameters.Message] = []
+    var toolMessages = [ChatCompletionParameters.Message]()
     for (key, functionCallStreamedResponse) in functionCallsMap {
       let name = functionCallStreamedResponse.name
       let id = functionCallStreamedResponse.id
@@ -222,9 +232,9 @@ class ChatFunctionsCallStreamProvider {
   private let service: OpenAIService
   private var lastDisplayedMessageID: UUID?
   /// To be used for a new request
-  private var chatMessageParameters: [ChatCompletionParameters.Message] = []
-  private var functionCallsMap: [FunctionCallDefinition: FunctionCallStreamedResponse] = [:]
-  private var availableFunctions: [FunctionCallDefinition: @MainActor (String) async throws -> String] = [:]
+  private var chatMessageParameters = [ChatCompletionParameters.Message]()
+  private var functionCallsMap = [FunctionCallDefinition: FunctionCallStreamedResponse]()
+  private var availableFunctions = [FunctionCallDefinition: @MainActor (String) async throws -> String]()
 
   // MARK: - Private Methods
 

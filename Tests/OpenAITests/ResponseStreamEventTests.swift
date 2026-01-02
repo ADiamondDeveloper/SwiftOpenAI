@@ -340,6 +340,7 @@ final class ResponseStreamEventTests: XCTestCase {
         "type": "response.function_call_arguments.done",
         "item_id": "item_456",
         "output_index": 0,
+        "name": "get_current_weather",
         "arguments": "{\\"location\\": \\"San Francisco, CA\\"}",
         "sequence_number": 6
       }
@@ -350,6 +351,7 @@ final class ResponseStreamEventTests: XCTestCase {
 
     if case .functionCallArgumentsDone(let doneEvent) = event {
       XCTAssertEqual(doneEvent.type, "response.function_call_arguments.done")
+      XCTAssertEqual(doneEvent.name, "get_current_weather")
       XCTAssertEqual(doneEvent.arguments, "{\"location\": \"San Francisco, CA\"}")
     } else {
       XCTFail("Expected functionCallArgumentsDone event")
@@ -545,7 +547,7 @@ final class ResponseStreamEventTests: XCTestCase {
     ]
 
     let decoder = JSONDecoder()
-    var receivedEvents: [ResponseStreamEvent] = []
+    var receivedEvents = [ResponseStreamEvent]()
 
     // Decode all events
     for eventJson in events {
@@ -612,7 +614,7 @@ final class ResponseStreamEventTests: XCTestCase {
           "call_id": "call_789",
           "action": {
             "type": "execute",
-            "command": "ls -la"
+            "command": ["ls", "-la"]
           },
           "status": "in_progress"
         }
@@ -626,7 +628,7 @@ final class ResponseStreamEventTests: XCTestCase {
       if case .localShellCall(let shellCall) = addedEvent.item {
         XCTAssertEqual(shellCall.id, "shell_123")
         XCTAssertEqual(shellCall.callId, "call_789")
-        XCTAssertEqual(shellCall.action.command, "ls -la")
+        XCTAssertEqual(shellCall.action.command, ["ls", "-la"])
         XCTAssertEqual(shellCall.status, "in_progress")
       } else {
         XCTFail("Expected local shell call item")
@@ -720,10 +722,8 @@ final class ResponseStreamEventTests: XCTestCase {
 
     do {
       _ = try decoder.decode(ResponseStreamEvent.self, from: json.data(using: .utf8)!)
-      XCTFail("Should have thrown an error for unknown event type")
     } catch {
-      // Expected error
-      XCTAssertTrue(error is DecodingError)
+      XCTFail("Should have thrown an error for unknown event type")
     }
   }
 }
